@@ -35,7 +35,7 @@ def process_csv_data(filepath):
     # 各行でループ処理
     for _, row in df.iterrows():
         date_time = row['DATE_TIME']
-        half_values = row[float_columns] / 2  # 値を半分にする、明確に数値列だけを選択
+        half_values = row[float_columns].apply(lambda x: x / 2 if pd.notnull(x) else x)  # 値を半分にする、明確に数値列だけを選択
         
         # 現在の時間の行を追加
         new_rows.append([date_time] + list(half_values))
@@ -50,12 +50,15 @@ def process_csv_data(filepath):
     new_df.sort_values('DATE_TIME', inplace=True)
     
     # 日付ごとに1から48までの時間帯を割り当て
-    new_df['TIME_SLOT'] = new_df.groupby(new_df['DATE_TIME'].dt.date).cumcount() + 1
-    
+    new_df['コマ'] = new_df.groupby(new_df['DATE_TIME'].dt.date).cumcount() + 1
+    # コマ列をDATE_TIME列の直後に移動する
+    cols = list(new_df.columns)
+    cols.insert(1, cols.pop(cols.index('コマ')))  # TIME_SLOTを取り出して2番目に挿入
+    new_df = new_df[cols]
+
     # 新しいファイルとして保存
     new_df.to_csv('processed_data.csv', index=False)
     return new_df
 
 # この関数の呼び出し
 processed_data = process_csv_data('combined_data.csv')
-

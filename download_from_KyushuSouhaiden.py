@@ -5,15 +5,12 @@ from urllib.parse import urljoin
 import pandas as pd
 def download_csv_files(url, directory):
     # ディレクトリの作成（存在しない場合）
-    os.makedirs(directory, exist_ok=True)
-    
+    os.makedirs(directory, exist_ok=True)  
     # ページにアクセス
     response = requests.get(url)
-    response.raise_for_status()  # HTTPエラーがある場合は例外を発生させる
-    
+    response.raise_for_status()  # HTTPエラーがある場合は例外を発生させる    
     # BeautifulSoupを使用してHTMLを解析
-    soup = BeautifulSoup(response.text, 'html.parser')
-    
+    soup = BeautifulSoup(response.text, 'html.parser')    
     # CSVファイルのリンクを見つける
     links = soup.find_all('a', href=True)
     csv_links = [link['href'] for link in links if link['href'].endswith('.csv') and 'area_jyukyu_jisseki' in link['href']]
@@ -55,7 +52,12 @@ def combine_csv_files_with_headers(directory):
     
     # 各CSVファイルをDataFrameとして読み込み
     for file_path in csv_files:
-        df = pd.read_csv(file_path, header=None, skiprows=2, encoding="shift-jis")
+        df = pd.read_csv(
+                        file_path,header=None, skiprows=2, encoding="shift-jis",
+                        thousands=',',
+                        parse_dates=[0],  # 1列目の日付時刻をパース
+                        dtype={col: 'float' for col in range(1, 13)}  # 2列目から13列目までをfloatとして読み込む
+    )
         df.columns = headers
         dfs.append(df)
     
@@ -68,7 +70,7 @@ def combine_csv_files_with_headers(directory):
     
     # 結合したデータをCSVファイルとして保存
     combined_file_path = os.path.join(directory, "combined_data.csv")
-    combined_df.to_csv(combined_file_path, index=False)
+    combined_df.to_csv(index=False)
     print(f"All data combined and sorted by date-time, saved to {combined_file_path}")
 
 # URLとディレクトリを設定
@@ -78,6 +80,3 @@ directory = 'Kyushu_Jukyu'
 # ダウンロードと結合の関数をコメントアウト
 # download_csv_files(url, directory)
 combine_csv_files_with_headers(directory)
-
-
-
